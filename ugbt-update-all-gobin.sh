@@ -104,6 +104,8 @@ echo
 # if in dry run, show a way of selectively running the commands
 if [[ -z ${FORCE} ]]; then
   echo "to updates (so you can pipe to bash), you can remove the 'FORCE' envvar  or append:" >>/dev/stderr
-  echo "ACTION='UPDATE$'"
-  echo "grep -A1 \${ACTION} | grep -v -e \${ACTION} -e '^--$'" >>/dev/stderr
+  {
+    echo "ACTION='UPDATE$'"
+    echo "grep -A1 \${ACTION} | grep -v -e \${ACTION} -e '^--$'"
+  } >>/dev/stderr
 fi
