@@ -31,52 +31,71 @@ if [[ "${#missing_binaries[@]}" -ne 0 ]]; then
 	exit 1
 fi
 
-while IFS= read -r -d '' binary_to_check
-do
-  echo -n "$(basename "${binary_to_check}"): "
-  # get all of the versions
-  versions=$(ugbt list -suffix '^$' "${binary_to_check}" 2>&1 || true )
+check_version_response=
+function check_version() {
+  versions="$*"
 
   # if the command fails to run
   sucess="$?"
   if [[ "${sucess}" -ne 0 ]]; then 
     echo "error getting versions, output '${versions}'"
-    continue
+    return
   fi
 
   # if the ugbt notes there is nothing to do
   if [[ "${versions}" == 'no new version' ]]; then
     echo "OK"
-    continue
+    check_version_response="OK"
+    return
   fi
 
   # if there are no versions to choose from
   if [[ -z "${versions}" ]]; then 
     echo 'MISSING'
+    check_version_response='MISSING'
     echo "couldn't get versions"
-    continue
+    return
   fi
 
   # if the ugbt fails (this is the error format
   if [[ "${versions}" =~ ugbt:*  ]]; then
     echo "ERROR"
+    check_version_response="ERROR"
     echo "internal error '${versions}'"
-    continue
+    return
   fi
 
   # extract the latest version
   latest_version=$(echo "${versions}" | head -n1 | cut -d' ' -f1)
 
   echo "UPDATE"
+  check_version_response="UPDATE"
   # if in dry run, print the comnmand that'll upgrade
   if [[ -z "${FORCE}" ]]; then
     echo "ugbt install $binary_to_check $latest_version"
-    continue
+    return
   fi
 
   # if in force mode, auto-update
   # wrap with 'true' in case the installation has errors
   ugbt install "${binary_to_check}" "${latest_version}" || true
+
+}
+
+while IFS= read -r -d '' binary_to_check
+do
+  echo -n "$(basename "${binary_to_check}"): "
+  # get all of the versions
+  versions=$(ugbt list -suffix '^$' "${binary_to_check}" 2>&1 || true )
+  check_version "${versions}"
+  if [[ "${check_version_response}" == 'MISSING' ]]; then
+    echo "trying to search all versions"
+    all_versions=$(ugbt list -all -suffix '^$' "${binary_to_check}" 2>&1 || true )
+    check_version_response=
+    check_version "${all_versions}"
+  fi
+
+
 
 done < <(find "${dir}" -type f -print0)
 
@@ -85,5 +104,6 @@ echo
 # if in dry run, show a way of selectively running the commands
 if [[ -z ${FORCE} ]]; then
   echo "to updates (so you can pipe to bash), you can remove the 'FORCE' envvar  or append:" >>/dev/stderr
-  echo "grep -A1 UPDATE$ | grep -v -e 'UPDATE$' -e '^--$'" >>/dev/stderr
+  echo "ACTION='UPDATE$'"
+  echo "grep -A1 \${ACTION} | grep -v -e \${ACTION} -e '^--$'" >>/dev/stderr
 fi
