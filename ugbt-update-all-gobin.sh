@@ -35,7 +35,7 @@ while IFS= read -r -d '' binary_to_check
 do
   echo -n "$(basename "${binary_to_check}"): "
   # get all of the versions
-  versions=$(ugbt list "${binary_to_check}" 2>&1 || true )
+  versions=$(ugbt list -suffix '^$' "${binary_to_check}" 2>&1 || true )
 
   # if the command fails to run
   sucess="$?"
