@@ -2,6 +2,8 @@
 
 set -eEuo pipefail
 
+binaries_to_skip=( )
+
 # extract the gobin for verification
 dir=$(go env GOBIN)
 dir=${searchdir:-~/go/bin}
@@ -34,6 +36,11 @@ fi
 
 while IFS= read -r -d '' binary_to_check
 do
+  # if file is in 'binaies_to_skip; skip it
+  if [[ "${binaries_to_skip[*]}" =~ "$(basename "${binary_to_check}")" ]]; then
+    echo "skipping $(basename "${binary_to_check}")"
+    continue
+  fi
   echo -n "$(basename "${binary_to_check}"): "
   ugbt update "${binary_to_check}"
 done < <(find "${dir}" -type f -print0)
