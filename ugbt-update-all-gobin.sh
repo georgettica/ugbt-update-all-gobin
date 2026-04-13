@@ -5,8 +5,7 @@ set -eEuo pipefail
 binaries_to_skip=( )
 
 # extract the gobin for verification
-dir=$(go env GOBIN)
-dir=${searchdir:-~/go/bin}
+dir=${searchdir:-$(go env GOBIN)}
 if ! [[ -d "${dir}" ]]; then
 	echo "GOBIN is incorrectly set, verify it point to a valid directory"
 	exit 1
@@ -23,7 +22,7 @@ reuqired_binaries=(
 missing_binaries=()
 ## first pass on binaries (so if a bunch of them are missing it'll update once
 for required_binary in "${reuqired_binaries[@]}" ; do
-  if ! eval "which ${required_binary} 2>&1 >/dev/null"; then
+  if ! which "${required_binary}" >/dev/null 2>&1; then
     missing_binaries+=( "$required_binary" ) 
   fi
 done
